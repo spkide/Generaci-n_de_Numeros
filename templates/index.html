@@ -459,6 +459,21 @@
       <button class="btn btn-primary" onclick="generateSingle()">⚡ Generar uno</button>
       <button class="btn btn-secondary" onclick="generateBulk()">📋 Generar lista</button>
     </div>
+    
+    <!-- VERIFICACIÓN POR TELÉFONO (SIMULADA) -->
+    <div style="margin-top:18px;border-top:1px solid var(--border);padding-top:18px;">
+      <label>Verificación por teléfono</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+        <input id="v_phone" type="text" placeholder="+52 55 1234 5678" style="flex:1;min-width:180px;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:'Space Mono',monospace;"/>
+        <button class="btn btn-primary" style="padding:10px 14px;" onclick="sendCode()">Enviar código</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center;">
+        <input id="v_code" type="text" placeholder="Código (6 dígitos)" style="padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:'Space Mono',monospace;width:160px;"/>
+        <button class="btn btn-secondary" style="padding:10px 14px;" onclick="verifyCode()">Verificar</button>
+        <div id="verifyMsg" style="margin-left:8px;color:var(--muted);font-family:'Space Mono',monospace;font-size:0.9rem;"></div>
+      </div>
+      <div style="margin-top:8px;color:var(--muted);font-family:'Space Mono',monospace;font-size:0.8rem;">Nota: envío simulado — revisa la consola del servidor para ver el código.</div>
+    </div>
   </div>
 
   <!-- NÚMERO ÚNICO -->
@@ -593,6 +608,55 @@
         Usa "Generar lista" para crear múltiples números
       </div>`;
     document.getElementById('listTitle').textContent = 'lista de números';
+  }
+
+  async function sendCode() {
+    const phone = document.getElementById('v_phone').value.trim();
+    const msg = document.getElementById('verifyMsg');
+    if (!phone) { msg.textContent = 'Introduce un número válido'; return; }
+    msg.textContent = 'Enviando...';
+    try {
+      const res = await fetch('/send_code', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({phone})
+      });
+      const data = await res.json();
+      if (res.ok) {
+        msg.style.color = 'var(--accent2)';
+        msg.textContent = data.message || 'Código enviado';
+      } else {
+        msg.style.color = 'var(--warn)';
+        msg.textContent = data.error || 'Error enviando código';
+      }
+    } catch (e) {
+      msg.style.color = 'var(--warn)';
+      msg.textContent = 'Error de red';
+    }
+  }
+
+  async function verifyCode() {
+    const phone = document.getElementById('v_phone').value.trim();
+    const code = document.getElementById('v_code').value.trim();
+    const msg = document.getElementById('verifyMsg');
+    if (!phone || !code) { msg.textContent = 'Número y código requeridos'; return; }
+    msg.textContent = 'Verificando...';
+    try {
+      const res = await fetch('/verify_code', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({phone, code})
+      });
+      const data = await res.json();
+      if (res.ok && data.verified) {
+        msg.style.color = 'var(--accent2)';
+        msg.textContent = data.message || 'Verificado';
+      } else {
+        msg.style.color = 'var(--warn)';
+        msg.textContent = data.error || 'Código incorrecto';
+      }
+    } catch (e) {
+      msg.style.color = 'var(--warn)';
+      msg.textContent = 'Error de red';
+    }
   }
 
   function showToast() {
